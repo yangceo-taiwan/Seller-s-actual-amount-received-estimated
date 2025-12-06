@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>賣屋回推試算 (雙模式版) - 宏國地政</title>
-    <meta name="description" content="支援「總回收」與「純獲利」雙模式試算，精準回推成交價。">
+    <title>賣屋回推試算 (雙模式完整版) - 宏國地政</title>
+    <meta name="description" content="支援「總回收」與「純獲利」雙模式試算，精準回推成交價，整合社群與諮詢入口。">
     
     <style>
         :root {
@@ -15,13 +15,15 @@
             --text: #333333;
             --line-green: #06c755;
             --danger: #e63946;
+            --fb-blue: #1877f2;
+            --google-red: #ea4335;
         }
 
         body {
             font-family: "Microsoft JhengHei", sans-serif;
             background-color: var(--bg);
             margin: 0;
-            padding: 0 0 100px 0;
+            padding: 0 0 120px 0; /* 底部留白增加，避免擋住內容 */
             color: var(--text);
             line-height: 1.5;
         }
@@ -44,7 +46,7 @@
         h1 { color: var(--primary); font-size: 1.6rem; margin: 15px 0 5px 0; }
         .subtitle { color: #666; font-size: 0.95rem; }
 
-        /* --- 模式切換器 (New) --- */
+        /* --- 模式切換器 --- */
         .mode-switcher {
             background: #e3f2fd;
             border-radius: 12px;
@@ -152,28 +154,36 @@
         }
         .copy-btn:hover { background: white; color: var(--primary); }
 
-        /* --- 懸浮功能島 --- */
+        /* --- 懸浮功能島 (4欄位版) --- */
         .dock-container {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; z-index: 999;
+            display: flex; gap: 10px; z-index: 999;
             background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
-            padding: 10px 25px; border-radius: 50px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            width: 90%; max-width: 450px;
+            padding: 10px 15px; border-radius: 50px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+            width: 95%; max-width: 500px; /* 稍微加寬以容納4個 */
+            justify-content: space-between;
         }
         .dock-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            text-decoration: none; color: #555; font-size: 0.75rem;
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-decoration: none; color: #555; font-size: 0.7rem;
+            min-width: 50px;
         }
         .icon-circle {
-            width: 35px; height: 35px; border-radius: 50%;
+            width: 32px; height: 32px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: white; margin-bottom: 3px; font-weight:bold;
+            color: white; margin-bottom: 3px; font-weight:bold; font-size: 1.1rem;
+            transition: transform 0.2s;
         }
-        .dock-fb { background: #1877f2; }
-        .dock-line { background: #06c755; width: 45px; height: 45px; font-size: 1.5rem; }
-        .dock-review { background: #ea4335; }
-        .main-dock { flex: 1.2; font-weight: bold; color: #06c755; }
+        .dock-item:hover .icon-circle { transform: translateY(-3px); }
+        
+        .dock-fb { background: var(--fb-blue); }
+        .dock-group { background: #00c300; } /* 社群綠 */
+        .dock-main { background: var(--line-green); width: 42px; height: 42px; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(6,199,85,0.3); }
+        .dock-review { background: var(--google-red); }
+        
+        /* 中間的主按鈕字體稍微大一點 */
+        .main-dock-text { font-weight: bold; color: var(--line-green); }
 
     </style>
 </head>
@@ -186,7 +196,7 @@
             <img src="易丞logo-01.jpg" alt="YC Logo">
         </div>
         <h1>💰 賣屋回推試算神器</h1>
-        <p class="subtitle">專業地政士監製，精確解決您的議價難題</p>
+        <p class="subtitle">輸入您的目標金額，精準回推建議售價</p>
     </div>
 </div>
 
@@ -206,7 +216,7 @@
         <div class="form-group">
             <label id="targetLabel">💎 賣方欲實拿總額 (萬)</label>
             <div class="input-box">
-                <input type="number" id="netTarget" placeholder="請輸入金額" oninput="solve()">
+                <input type="number" id="netTarget" placeholder="例如：1200 (包含成本)" oninput="solve()">
                 <span class="unit">萬元</span>
             </div>
             <div id="lossWarning" class="warning-box">
@@ -314,17 +324,21 @@
 </div>
 
 <div class="dock-container">
-    <a href="https://www.facebook.com/" target="_blank" class="dock-item">
+    <a href="https://www.facebook.com/062582589a/" target="_blank" class="dock-item">
         <div class="icon-circle dock-fb">f</div>
-        <span>粉絲團</span>
+        <span>FB粉專</span>
     </a>
-    <a href="https://line.me/R/ti/p/@604gpqef" target="_blank" class="dock-item main-dock">
-        <div class="icon-circle dock-line">L</div>
-        <span>加 LINE</span>
+    <a href="https://line.me/ti/g2/aVklWxyLP1RtfstQsslGQOlP4KViuFI7PPucdQ?utm_source=invitation&utm_medium=link_copy&utm_campaign=default" target="_blank" class="dock-item">
+        <div class="icon-circle dock-group">👥</div>
+        <span>加入社群</span>
     </a>
-    <a href="#" target="_blank" class="dock-item">
+    <a href="https://line.me/R/ti/p/@604gpqef" target="_blank" class="dock-item" style="flex: 1.3;">
+        <div class="icon-circle dock-main">L</div>
+        <span class="main-dock-text">預約諮詢</span>
+    </a>
+    <a href="https://maps.app.goo.gl/4cojhBfgireSM7VK8" target="_blank" class="dock-item">
         <div class="icon-circle dock-review">★</div>
-        <span>好評</span>
+        <span>好評推薦</span>
     </a>
 </div>
 
@@ -370,20 +384,16 @@
         const Rate = parseFloat(document.getElementById('taxRate').value) || 0.2;
 
         // 2. 決定真正的「目標淨收 (Net)」
-        // 這裡是用來解方程式的 N，必須包含本金（因為公式是基於總價扣除）
         let TargetNet = 0;
 
         if (calculationMode === 'profit') {
-            // 如果是純獲利模式，真正的目標回收 = 成本 + 雜支(如果不含在獲利內) + 用戶想賺的錢
-            // 通常「想賺 200 萬」是指最後口袋多了 200 萬。
-            // 淨收 (Net) = 成本 (Cost) + 獲利 (UserProfit)
+            // 純獲利模式：目標回收 = 成本 + 用戶想賺的錢
             TargetNet = Cost + userInputTarget;
             document.getElementById('lossWarning').style.display = 'none';
         } else {
             // 總回收模式
             TargetNet = userInputTarget;
-            
-            // 檢查是否輸入了賠售金額 (例如成本 800 輸入 200)
+            // 賠售警示
             if (userInputTarget > 0 && Cost > 0 && userInputTarget < Cost) {
                 document.getElementById('lossWarning').style.display = 'block';
             } else {
@@ -405,49 +415,35 @@
             f_fixed = parseFloat(document.getElementById('feeAmount').value) || 0;
         }
 
-        // 4. 核心解方程式 (三元一次聯立解)
-        // 變數：Price(X), Tax(Z), Fee(Y)
-        // 關係：TargetNet = X - Fee - Exp - LandPaid - Tax
-        // 關係：Tax = (X - Cost - Exp - Fee - LandInc) * Rate  (若為負則為0)
-        
+        // 4. 核心解方程式
         let X = 0;
         let Tax = 0;
         let Fee = 0;
 
-        // --- 先假設「有獲利、需繳稅」的情況計算 X ---
+        // A. 假設有獲利需繳稅
         let X_taxable = 0;
         if (feeInputMode === 'percent') {
-            // 公式：Price = (Net + Exp + LandPaid - Rate*(Cost + Exp + LandInc)) / ((1 - Rate)*(1 - f_rate))
-            // 注意：這裡的分母推導：
-            // Net = X(1-f) - E - Lp - [Rate * (X(1-f) - C - E - Li)]
-            // Net = X(1-f) - E - Lp - Rate*X(1-f) + Rate*(C+E+Li)
-            // Net + E + Lp - Rate*(C+E+Li) = X(1-f)(1-Rate)
             let numerator = TargetNet + Exp + LandPaid - (Rate * (Cost + Exp + LandInc));
             let denominator = (1 - f_rate) * (1 - Rate);
             if (denominator !== 0) X_taxable = numerator / denominator;
         } else {
-            // 固定金額仲介費
-            // Net = X - F - E - Lp - Rate*(X - C - E - F - Li)
-            // Net + F + E + Lp - Rate*(C+E+F+Li) = X(1 - Rate)
             let numerator = TargetNet + f_fixed + Exp + LandPaid - (Rate * (Cost + Exp + f_fixed + LandInc));
             let denominator = 1 - Rate;
             if (denominator !== 0) X_taxable = numerator / denominator;
         }
 
-        // --- 驗算稅基 (TaxBase) ---
+        // 驗算稅基
         let Fee_taxable = (feeInputMode === 'percent') ? X_taxable * f_rate : f_fixed;
         let TaxBase = X_taxable - Cost - Exp - Fee_taxable - LandInc;
 
-        // --- 決策：該用哪個結果？ ---
+        // B. 決策
         if (TaxBase > 0) {
-            // 真的有賺錢，假設正確
+            // 獲利模式
             X = X_taxable;
             Fee = Fee_taxable;
             Tax = TaxBase * Rate;
         } else {
-            // 算出來發現沒賺錢 (或賠錢)，所以不用繳房地合一稅
-            // 改用「無稅公式」重算
-            // Net = X - Fee - Exp - LandPaid
+            // 賠售或無稅模式
             Tax = 0;
             if (feeInputMode === 'percent') {
                 X = (TargetNet + Exp + LandPaid) / (1 - f_rate);
@@ -458,9 +454,9 @@
             }
         }
 
-        // 5. 更新畫面與回寫仲介費
+        // 5. 更新畫面
         if (X > 0 && isFinite(X)) {
-            // 更新仲介費連動
+            // 仲介費回寫
             if (feeInputMode === 'percent') {
                 document.getElementById('feeAmount').value = Fee.toFixed(1);
                 document.getElementById('feeFeedback').innerText = `依成交價 ${document.getElementById('feePercent').value}% 計算`;
@@ -472,9 +468,7 @@
                     `換算約成交價 ${currentRate.toFixed(2)}%`;
             }
 
-            // 計算驗算值 (Verify)
-            // 如果是獲利模式，驗算值顯示「Net - Cost」
-            // 如果是總回收模式，驗算值顯示「Net」
+            // 驗算值
             let realNetPocket = X - Fee - Exp - LandPaid - Tax;
             let verifyValue = (calculationMode === 'profit') ? (realNetPocket - Cost) : realNetPocket;
 
