@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>賣屋回推試算 (雙模式版) - 宏國地政</title>
+    <meta name="description" content="支援「總回收」與「純獲利」雙模式試算，精準回推成交價。">
+    
+    <style>
+        :root {
+            --primary: #1a5f7a;
+            --accent: #d4a017;
+            --bg: #f4f7f6;
+            --white: #ffffff;
+            --text: #333333;
+            --line-green: #06c755;
+            --danger: #e63946;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0 0 100px 0;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* --- 頂部 --- */
+        .header {
+            text-align: center;
+            padding: 25px 0;
+            background: var(--white);
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .logo-group img { height: 55px; margin: 0 10px; vertical-align: middle; }
+        h1 { color: var(--primary); font-size: 1.6rem; margin: 15px 0 5px 0; }
+        .subtitle { color: #666; font-size: 0.95rem; }
+
+        /* --- 模式切換器 (New) --- */
+        .mode-switcher {
+            background: #e3f2fd;
+            border-radius: 12px;
+            padding: 6px;
+            display: flex;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+        .mode-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .mode-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 95, 122, 0.3);
+        }
+        .mode-btn:hover:not(.active) { background: #bbdefb; }
+
+        /* --- 卡片 --- */
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            border-top: 4px solid var(--accent);
+        }
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ddd;
+            display: flex;
+            align-items: center;
+        }
+        .section-header::before {
+            content: ''; width: 6px; height: 20px;
+            background: var(--accent); margin-right: 10px; border-radius: 2px;
+        }
+
+        /* --- 輸入欄位 --- */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media(max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #555; }
+        .input-box { position: relative; display: flex; align-items: center; }
+        .input-box input, .input-box select {
+            width: 100%; padding: 12px; padding-right: 40px;
+            border: 2px solid #eee; border-radius: 8px;
+            font-size: 1.1rem; background: #fff; transition: 0.3s;
+        }
+        .input-box input:focus { border-color: var(--primary); outline: none; }
+        .unit { position: absolute; right: 12px; color: #888; pointer-events: none; }
+        .hint { font-size: 0.85rem; color: #888; margin-top: 5px; }
+
+        /* --- 警示區塊 --- */
+        .warning-box {
+            background: #ffebee; color: var(--danger);
+            padding: 10px; border-radius: 8px; margin-top: 10px;
+            font-size: 0.9rem; display: none; border: 1px solid #ffcdd2;
+        }
+
+        /* --- 仲介費區 --- */
+        .broker-box {
+            background: #f8fbfd; padding: 15px;
+            border-radius: 8px; border: 1px dashed #b0bec5;
+        }
+
+        /* --- 結果儀表板 --- */
+        .dashboard {
+            background: linear-gradient(145deg, var(--primary), #2c3e50);
+            color: white; padding: 30px; border-radius: 12px;
+            text-align: center; box-shadow: 0 10px 30px rgba(26, 95, 122, 0.4);
+        }
+        .result-price {
+            font-size: 3rem; font-weight: 800; color: var(--accent);
+            margin: 0; line-height: 1.1; font-family: Arial, sans-serif;
+        }
+        .details-grid {
+            display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;
+            margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        .detail-item strong { display: block; font-size: 1.4rem; margin-top: 5px; }
+        .detail-item span { font-size: 0.9rem; opacity: 0.8; }
+
+        .copy-btn {
+            margin-top: 25px; background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.4); color: white;
+            padding: 10px 30px; border-radius: 50px; cursor: pointer;
+            transition: 0.3s; font-size: 1rem;
+        }
+        .copy-btn:hover { background: white; color: var(--primary); }
+
+        /* --- 懸浮功能島 --- */
+        .dock-container {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; z-index: 999;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+            padding: 10px 25px; border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            width: 90%; max-width: 450px;
+        }
+        .dock-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            text-decoration: none; color: #555; font-size: 0.75rem;
+        }
+        .icon-circle {
+            width: 35px; height: 35px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; margin-bottom: 3px; font-weight:bold;
+        }
+        .dock-fb { background: #1877f2; }
+        .dock-line { background: #06c755; width: 45px; height: 45px; font-size: 1.5rem; }
+        .dock-review { background: #ea4335; }
+        .main-dock { flex: 1.2; font-weight: bold; color: #06c755; }
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="container">
+        <div class="logo-group">
+            <img src="宏國地政封面.jpg" alt="HG Logo">
+            <img src="易丞logo-01.jpg" alt="YC Logo">
+        </div>
+        <h1>💰 賣屋回推試算神器</h1>
+        <p class="subtitle">專業地政士監製，精確解決您的議價難題</p>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="mode-switcher">
+        <div class="mode-btn active" id="modeTotal" onclick="setMode('total')">
+            <span>💰 我算總回收 (含本金)</span>
+        </div>
+        <div class="mode-btn" id="modeProfit" onclick="setMode('profit')">
+            <span>📈 我算純獲利 (不含本金)</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">1. 設定目標 (Target)</div>
+        <div class="form-group">
+            <label id="targetLabel">💎 賣方欲實拿總額 (萬)</label>
+            <div class="input-box">
+                <input type="number" id="netTarget" placeholder="請輸入金額" oninput="solve()">
+                <span class="unit">萬元</span>
+            </div>
+            <div id="lossWarning" class="warning-box">
+                ⚠️ 注意：您輸入的金額低於成本，系統將以「賠售」進行試算（無房地合一稅）。若您是想計算「賺多少」，請切換上方模式為「我算純獲利」。
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">2. 成本與稅務 (Variables)</div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label>📉 原始取得成本 (萬)</label>
+                <div class="input-box">
+                    <input type="number" id="cost" placeholder="合約價格" oninput="solve()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>🛠️ 雜支/代書費 (萬)</label>
+                <div class="input-box">
+                    <input type="number" id="miscExp" placeholder="預設 6" value="6" oninput="solve()">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label>📄 土地漲價總數額 (萬)</label>
+                <div class="input-box">
+                    <input type="number" id="landIncDed" placeholder="扣除額" value="0" oninput="solve()">
+                </div>
+                <div class="hint">權狀或謄本記載 (扣稅基用)</div>
+            </div>
+            <div class="form-group">
+                <label>💰 預計繳納土增稅 (萬)</label>
+                <div class="input-box">
+                    <input type="number" id="landTaxPaid" placeholder="實際支出" value="0" oninput="solve()">
+                </div>
+                <div class="hint">預計現金繳納金額</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📊 房地合一稅率</label>
+            <div class="input-box">
+                <select id="taxRate" onchange="solve()">
+                    <option value="0.45">45% (持有2年內)</option>
+                    <option value="0.35">35% (持有2~5年)</option>
+                    <option value="0.20" selected>20% (持有5~10年)</option>
+                    <option value="0.15">15% (持有10年以上)</option>
+                    <option value="0">0% (舊制/免稅)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">3. 仲介服務費 (Broker Fee)</div>
+        <div class="broker-box">
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>方式 A：依成交價 %</label>
+                    <div class="input-box">
+                        <input type="number" id="feePercent" placeholder="4" value="4" oninput="updateFeeMode('percent')">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>方式 B：固定金額 (萬)</label>
+                    <div class="input-box">
+                        <input type="number" id="feeAmount" placeholder="輸入金額" oninput="updateFeeMode('amount')">
+                        <span class="unit">萬元</span>
+                    </div>
+                </div>
+            </div>
+            <div id="feeFeedback" class="hint" style="text-align:right; font-weight:bold; color:var(--primary);">
+                依成交價 4% 計算
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div style="opacity:0.8; margin-bottom:10px;">建議成交總價</div>
+        <h2 class="result-price" id="finalPrice">0 <span style="font-size:1.5rem">萬</span></h2>
+        
+        <div class="details-grid">
+            <div class="detail-item">
+                <span>預估房地合一稅</span>
+                <strong id="taxResult">0 萬</strong>
+            </div>
+            <div class="detail-item">
+                <span>仲介服務費</span>
+                <strong id="feeResult">0 萬</strong>
+            </div>
+            <div class="detail-item">
+                <span id="verifyLabel">實際回收 (驗算)</span>
+                <strong id="verifyNet">0 萬</strong>
+            </div>
+        </div>
+
+        <button class="copy-btn" onclick="copyText()">
+            📋 複製結果傳給客戶
+        </button>
+    </div>
+</div>
+
+<div class="dock-container">
+    <a href="https://www.facebook.com/" target="_blank" class="dock-item">
+        <div class="icon-circle dock-fb">f</div>
+        <span>粉絲團</span>
+    </a>
+    <a href="https://line.me/R/ti/p/@604gpqef" target="_blank" class="dock-item main-dock">
+        <div class="icon-circle dock-line">L</div>
+        <span>加 LINE</span>
+    </a>
+    <a href="#" target="_blank" class="dock-item">
+        <div class="icon-circle dock-review">★</div>
+        <span>好評</span>
+    </a>
+</div>
+
+<script>
+    // 狀態管理
+    let calculationMode = 'total'; // 'total' (含本金) or 'profit' (純獲利)
+    let feeInputMode = 'percent';  // 'percent' or 'amount'
+
+    function setMode(mode) {
+        calculationMode = mode;
+        
+        // 更新 UI 樣式
+        document.getElementById('modeTotal').classList.remove('active');
+        document.getElementById('modeProfit').classList.remove('active');
+        
+        if (mode === 'total') {
+            document.getElementById('modeTotal').classList.add('active');
+            document.getElementById('targetLabel').innerText = "💎 賣方欲實拿總額 (含本金)";
+            document.getElementById('netTarget').placeholder = "例如：1200 (包含成本)";
+            document.getElementById('verifyLabel').innerText = "實際回收 (驗算)";
+        } else {
+            document.getElementById('modeProfit').classList.add('active');
+            document.getElementById('targetLabel').innerText = "💎 賣方目標獲利 (不含本金)";
+            document.getElementById('netTarget').placeholder = "例如：200 (成本之外多賺的)";
+            document.getElementById('verifyLabel').innerText = "實際獲利 (驗算)";
+        }
+        solve(); // 切換後立即重算
+    }
+
+    function updateFeeMode(mode) {
+        feeInputMode = mode;
+        if(mode === 'percent') document.getElementById('feeAmount').value = '';
+        solve();
+    }
+
+    function solve() {
+        // 1. 取得基礎輸入
+        let userInputTarget = parseFloat(document.getElementById('netTarget').value) || 0;
+        const Cost = parseFloat(document.getElementById('cost').value) || 0;
+        const Exp = parseFloat(document.getElementById('miscExp').value) || 0;
+        const LandInc = parseFloat(document.getElementById('landIncDed').value) || 0;
+        const LandPaid = parseFloat(document.getElementById('landTaxPaid').value) || 0;
+        const Rate = parseFloat(document.getElementById('taxRate').value) || 0.2;
+
+        // 2. 決定真正的「目標淨收 (Net)」
+        // 這裡是用來解方程式的 N，必須包含本金（因為公式是基於總價扣除）
+        let TargetNet = 0;
+
+        if (calculationMode === 'profit') {
+            // 如果是純獲利模式，真正的目標回收 = 成本 + 雜支(如果不含在獲利內) + 用戶想賺的錢
+            // 通常「想賺 200 萬」是指最後口袋多了 200 萬。
+            // 淨收 (Net) = 成本 (Cost) + 獲利 (UserProfit)
+            TargetNet = Cost + userInputTarget;
+            document.getElementById('lossWarning').style.display = 'none';
+        } else {
+            // 總回收模式
+            TargetNet = userInputTarget;
+            
+            // 檢查是否輸入了賠售金額 (例如成本 800 輸入 200)
+            if (userInputTarget > 0 && Cost > 0 && userInputTarget < Cost) {
+                document.getElementById('lossWarning').style.display = 'block';
+            } else {
+                document.getElementById('lossWarning').style.display = 'none';
+            }
+        }
+
+        if (TargetNet === 0) {
+            updateDisplay(0,0,0,0);
+            return;
+        }
+
+        // 3. 準備仲介費參數
+        let f_rate = 0;
+        let f_fixed = 0;
+        if (feeInputMode === 'percent') {
+            f_rate = (parseFloat(document.getElementById('feePercent').value) || 4) / 100;
+        } else {
+            f_fixed = parseFloat(document.getElementById('feeAmount').value) || 0;
+        }
+
+        // 4. 核心解方程式 (三元一次聯立解)
+        // 變數：Price(X), Tax(Z), Fee(Y)
+        // 關係：TargetNet = X - Fee - Exp - LandPaid - Tax
+        // 關係：Tax = (X - Cost - Exp - Fee - LandInc) * Rate  (若為負則為0)
+        
+        let X = 0;
+        let Tax = 0;
+        let Fee = 0;
+
+        // --- 先假設「有獲利、需繳稅」的情況計算 X ---
+        let X_taxable = 0;
+        if (feeInputMode === 'percent') {
+            // 公式：Price = (Net + Exp + LandPaid - Rate*(Cost + Exp + LandInc)) / ((1 - Rate)*(1 - f_rate))
+            // 注意：這裡的分母推導：
+            // Net = X(1-f) - E - Lp - [Rate * (X(1-f) - C - E - Li)]
+            // Net = X(1-f) - E - Lp - Rate*X(1-f) + Rate*(C+E+Li)
+            // Net + E + Lp - Rate*(C+E+Li) = X(1-f)(1-Rate)
+            let numerator = TargetNet + Exp + LandPaid - (Rate * (Cost + Exp + LandInc));
+            let denominator = (1 - f_rate) * (1 - Rate);
+            if (denominator !== 0) X_taxable = numerator / denominator;
+        } else {
+            // 固定金額仲介費
+            // Net = X - F - E - Lp - Rate*(X - C - E - F - Li)
+            // Net + F + E + Lp - Rate*(C+E+F+Li) = X(1 - Rate)
+            let numerator = TargetNet + f_fixed + Exp + LandPaid - (Rate * (Cost + Exp + f_fixed + LandInc));
+            let denominator = 1 - Rate;
+            if (denominator !== 0) X_taxable = numerator / denominator;
+        }
+
+        // --- 驗算稅基 (TaxBase) ---
+        let Fee_taxable = (feeInputMode === 'percent') ? X_taxable * f_rate : f_fixed;
+        let TaxBase = X_taxable - Cost - Exp - Fee_taxable - LandInc;
+
+        // --- 決策：該用哪個結果？ ---
+        if (TaxBase > 0) {
+            // 真的有賺錢，假設正確
+            X = X_taxable;
+            Fee = Fee_taxable;
+            Tax = TaxBase * Rate;
+        } else {
+            // 算出來發現沒賺錢 (或賠錢)，所以不用繳房地合一稅
+            // 改用「無稅公式」重算
+            // Net = X - Fee - Exp - LandPaid
+            Tax = 0;
+            if (feeInputMode === 'percent') {
+                X = (TargetNet + Exp + LandPaid) / (1 - f_rate);
+                Fee = X * f_rate;
+            } else {
+                X = TargetNet + Exp + LandPaid + f_fixed;
+                Fee = f_fixed;
+            }
+        }
+
+        // 5. 更新畫面與回寫仲介費
+        if (X > 0 && isFinite(X)) {
+            // 更新仲介費連動
+            if (feeInputMode === 'percent') {
+                document.getElementById('feeAmount').value = Fee.toFixed(1);
+                document.getElementById('feeFeedback').innerText = `依成交價 ${document.getElementById('feePercent').value}% 計算`;
+            } else {
+                let currentRate = (Fee / X) * 100;
+                document.getElementById('feePercent').value = currentRate.toFixed(2);
+                document.getElementById('feeFeedback').innerHTML = (currentRate > 6) ? 
+                    `<span style="color:red">⚠️ 目前約 ${currentRate.toFixed(2)}% (超標)</span>` : 
+                    `換算約成交價 ${currentRate.toFixed(2)}%`;
+            }
+
+            // 計算驗算值 (Verify)
+            // 如果是獲利模式，驗算值顯示「Net - Cost」
+            // 如果是總回收模式，驗算值顯示「Net」
+            let realNetPocket = X - Fee - Exp - LandPaid - Tax;
+            let verifyValue = (calculationMode === 'profit') ? (realNetPocket - Cost) : realNetPocket;
+
+            updateDisplay(X, Tax, Fee, verifyValue);
+        }
+    }
+
+    function updateDisplay(price, tax, fee, verify) {
+        document.getElementById('finalPrice').innerHTML = Math.round(price).toLocaleString() + ' <span style="font-size:1.5rem">萬</span>';
+        document.getElementById('taxResult').innerText = Math.round(tax).toLocaleString() + ' 萬';
+        document.getElementById('feeResult').innerText = Math.round(fee).toLocaleString() + ' 萬';
+        document.getElementById('verifyNet').innerText = Math.round(verify).toLocaleString() + ' 萬';
+    }
+
+    function copyText() {
+        let targetText = document.getElementById('netTarget').value;
+        let modeText = (calculationMode === 'total') ? "總回收(含本金)" : "純獲利(不含本金)";
+        let text = `【賣屋議價試算】\n目標：${modeText} ${targetText} 萬\n----------------\n建議成交價：${document.getElementById('finalPrice').innerText}\n預估稅金：${document.getElementById('taxResult').innerText}\n仲介費：${document.getElementById('feeResult').innerText}`;
+        navigator.clipboard.writeText(text).then(() => alert("已複製！"));
+    }
+
+    // 初始化
+    setMode('total');
+</script>
+
+</body>
+</html>
