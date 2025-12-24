@@ -6,6 +6,49 @@
     <title>賣屋回推試算 (雙模式完整版) - 宏國地政</title>
     <meta name="description" content="支援「總回收」與「純獲利」雙模式試算，精準回推成交價，整合社群與諮詢入口。">
     
+    <script>
+        // 禁止右鍵
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁止常見開發者熱鍵
+        document.onkeydown = function(e) {
+            // F12
+            if(e.keyCode == 123) {
+                return false;
+            }
+            // Ctrl+Shift+I (檢查元素)
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+                return false;
+            }
+            // Ctrl+Shift+J (控制台)
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+                return false;
+            }
+            // Ctrl+Shift+C (選取元素)
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) {
+                return false;
+            }
+            // Ctrl+U (檢視原始碼)
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+                return false;
+            }
+            // Ctrl+S (存檔 - 嘗試阻止輕易下載)
+            if(e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) {
+                e.preventDefault();
+                return false;
+            }
+        };
+
+        // 防止拖曳選取文字 (除了輸入框)
+        document.onselectstart = function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                return false;
+            }
+        };
+    </script>
     <style>
         :root {
             --primary: #1a5f7a;
@@ -26,6 +69,20 @@
             padding: 0 0 120px 0; /* 底部留白增加，避免擋住內容 */
             color: var(--text);
             line-height: 1.5;
+            
+            /* 視覺層禁止選取 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* 恢復輸入框的可選取性 */
+        input, textarea, select {
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
         }
 
         .container {
@@ -344,16 +401,13 @@
 
 <script>
     // 狀態管理
-    let calculationMode = 'total'; // 'total' (含本金) or 'profit' (純獲利)
-    let feeInputMode = 'percent';  // 'percent' or 'amount'
+    let calculationMode = 'total'; 
+    let feeInputMode = 'percent';
 
     function setMode(mode) {
         calculationMode = mode;
-        
-        // 更新 UI 樣式
         document.getElementById('modeTotal').classList.remove('active');
         document.getElementById('modeProfit').classList.remove('active');
-        
         if (mode === 'total') {
             document.getElementById('modeTotal').classList.add('active');
             document.getElementById('targetLabel').innerText = "💎 賣方欲實拿總額 (含本金)";
@@ -365,7 +419,7 @@
             document.getElementById('netTarget').placeholder = "例如：200 (成本之外多賺的)";
             document.getElementById('verifyLabel').innerText = "實際獲利 (驗算)";
         }
-        solve(); // 切換後立即重算
+        solve();
     }
 
     function updateFeeMode(mode) {
@@ -375,7 +429,6 @@
     }
 
     function solve() {
-        // 1. 取得基礎輸入
         let userInputTarget = parseFloat(document.getElementById('netTarget').value) || 0;
         const Cost = parseFloat(document.getElementById('cost').value) || 0;
         const Exp = parseFloat(document.getElementById('miscExp').value) || 0;
@@ -383,17 +436,12 @@
         const LandPaid = parseFloat(document.getElementById('landTaxPaid').value) || 0;
         const Rate = parseFloat(document.getElementById('taxRate').value) || 0.2;
 
-        // 2. 決定真正的「目標淨收 (Net)」
         let TargetNet = 0;
-
         if (calculationMode === 'profit') {
-            // 純獲利模式：目標回收 = 成本 + 用戶想賺的錢
             TargetNet = Cost + userInputTarget;
             document.getElementById('lossWarning').style.display = 'none';
         } else {
-            // 總回收模式
             TargetNet = userInputTarget;
-            // 賠售警示
             if (userInputTarget > 0 && Cost > 0 && userInputTarget < Cost) {
                 document.getElementById('lossWarning').style.display = 'block';
             } else {
@@ -406,7 +454,6 @@
             return;
         }
 
-        // 3. 準備仲介費參數
         let f_rate = 0;
         let f_fixed = 0;
         if (feeInputMode === 'percent') {
@@ -415,13 +462,11 @@
             f_fixed = parseFloat(document.getElementById('feeAmount').value) || 0;
         }
 
-        // 4. 核心解方程式
         let X = 0;
         let Tax = 0;
         let Fee = 0;
-
-        // A. 假設有獲利需繳稅
         let X_taxable = 0;
+
         if (feeInputMode === 'percent') {
             let numerator = TargetNet + Exp + LandPaid - (Rate * (Cost + Exp + LandInc));
             let denominator = (1 - f_rate) * (1 - Rate);
@@ -432,18 +477,14 @@
             if (denominator !== 0) X_taxable = numerator / denominator;
         }
 
-        // 驗算稅基
         let Fee_taxable = (feeInputMode === 'percent') ? X_taxable * f_rate : f_fixed;
         let TaxBase = X_taxable - Cost - Exp - Fee_taxable - LandInc;
 
-        // B. 決策
         if (TaxBase > 0) {
-            // 獲利模式
             X = X_taxable;
             Fee = Fee_taxable;
             Tax = TaxBase * Rate;
         } else {
-            // 賠售或無稅模式
             Tax = 0;
             if (feeInputMode === 'percent') {
                 X = (TargetNet + Exp + LandPaid) / (1 - f_rate);
@@ -454,9 +495,7 @@
             }
         }
 
-        // 5. 更新畫面
         if (X > 0 && isFinite(X)) {
-            // 仲介費回寫
             if (feeInputMode === 'percent') {
                 document.getElementById('feeAmount').value = Fee.toFixed(1);
                 document.getElementById('feeFeedback').innerText = `依成交價 ${document.getElementById('feePercent').value}% 計算`;
@@ -468,7 +507,6 @@
                     `換算約成交價 ${currentRate.toFixed(2)}%`;
             }
 
-            // 驗算值
             let realNetPocket = X - Fee - Exp - LandPaid - Tax;
             let verifyValue = (calculationMode === 'profit') ? (realNetPocket - Cost) : realNetPocket;
 
@@ -490,7 +528,6 @@
         navigator.clipboard.writeText(text).then(() => alert("已複製！"));
     }
 
-    // 初始化
     setMode('total');
 </script>
 
